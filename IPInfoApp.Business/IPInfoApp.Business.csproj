@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\IPInfoApp.Data\IPInfoApp.Data.csproj" />
+  </ItemGroup>
+
 </Project>
