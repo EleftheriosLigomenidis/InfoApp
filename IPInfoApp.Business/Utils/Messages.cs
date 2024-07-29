@@ -14,6 +14,8 @@ namespace IPInfoApp.Business.Utils
         public static string WebServiceBulkOperation() => "Performing bulk call to ip2c WebSerice";
         public static string WebServiceBulkOperationFailed() => "An error occured during bulk call to ip2c Web Service for multiple addresses";
 
+        public static string ApiKeyNotProvided() => "Api key is not provided";
+        public static string Unauthorised() => "Unauthorised request";
         public static string FetchInformation(string ip) => $"Could not fetch country information for ip {ip}";
         public static string FetchCollection(string entityName,string source) =>
               $"Fetching collection of {entityName}s from  {source}";

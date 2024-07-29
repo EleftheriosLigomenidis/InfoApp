@@ -55,6 +55,7 @@ namespace IPInfoApp.Business.Services
         {
             string key = $"{ipAddress}";
             Models.Country? country; 
+
             try
             {
                 
@@ -70,7 +71,11 @@ namespace IPInfoApp.Business.Services
                     if (country == null)
                         throw new CountryNotFoundException(ipAddress);
 
-                    await SaveCountryInformationInDb(country, ipAddress);
+                    if(country.Id == 0)
+                    {
+                        await SaveCountryInformationInDb(country, ipAddress);
+                    }
+
                     await _redis.SetCacheItemAsync(key, country);
                 }
                 return country;

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IPInfoApp.Business.Models;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,7 @@ namespace IPInfoApp.Business.Contracts
 {
     public interface IIpInformationService
     {
-        Task<Models.Country> GetIpInformationAsync(string ipAddress);
+        Task<Country> GetIpInformationAsync(string ipAddress);
         Task<List<Models.IpAddressPerCountry>> GetIpAddressReportAsync(List<string>? countryCodes);
         Task UpdateIpInformation(CancellationToken cancellationToken);
     }

@@ -24,6 +24,7 @@ namespace IPInfoApp.Business.Models
 
         public List<IpAddress> IpAddresses { get; set; } = new();
 
-        //ToDo:Reduce properties
+
     }
+
 }
