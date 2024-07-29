@@ -160,7 +160,7 @@ namespace IPInfoApp.Business.Services
         public async Task UpdateIpInformation(CancellationToken cancellationToken)
         {
              _logger.LogInformation(Messages.UpdateIpInformationStarted());
-            const int batchSize = 100;
+            const int batchSize = 10;
             var totalCount = await _context.IpAddresses.CountAsync(cancellationToken: cancellationToken);
             var totalBatches = (int)Math.Ceiling((double)totalCount / batchSize);
 
@@ -169,7 +169,6 @@ namespace IPInfoApp.Business.Services
             var countries = await _context.Countries.ToListAsync(cancellationToken);
             Dictionary<string,Data.Models.Country> countryLookup =  countries.ToDictionary(x => x.TwoLetterCode,x => x);
             Dictionary<int, string> twoLetterCodeLookup = countries.ToDictionary(x => x.Id, x => x.TwoLetterCode);
-            Dictionary<string, int> idLookup = countries.ToDictionary(x => x.TwoLetterCode, x => x.Id);
             using (var transaction = await _context.Database.BeginTransactionAsync(cancellationToken))
             {
                 try
@@ -194,13 +193,13 @@ namespace IPInfoApp.Business.Services
                         {
                             foreach (var country in newCountries)
                             {
-                                idLookup[country.TwoLetterCode] = country.Id;
+                                countryLookup[country.TwoLetterCode] = country;
                                 twoLetterCodeLookup[country.Id] = country.TwoLetterCode;
                             }
                         }
                       
 
-                        await  UpdateIpAddresses(twoLetterCodeLookup, idLookup, ipCountryWebDictionary, ipAddresses);
+                        await  UpdateIpAddresses(twoLetterCodeLookup, countryLookup, ipCountryWebDictionary, ipAddresses);
                     }
           
                     await transaction.CommitAsync(cancellationToken);
@@ -216,6 +215,12 @@ namespace IPInfoApp.Business.Services
                 
         }
 
+        /// <summary>
+        /// If there are any countries adds them in the db
+        /// </summary>
+        /// <param name="ipCountryWebDictionary">The country information fetched from the web service</param>
+        /// <param name="dbCountryLookup">The db countries lookup in the db</param>
+        /// <returns></returns>
         private async Task<List<Data.Models.Country>> SaveNewCountries(Dictionary<string, Models.Country> ipCountryWebDictionary, 
                                                                        Dictionary<string,Data.Models.Country> dbCountryLookup)
         {
@@ -231,7 +236,11 @@ namespace IPInfoApp.Business.Services
                 }
             }
 
-             await  _context.Countries.BulkInsertAsync(newCountries);
+            if (newCountries.Count != 0)
+            {
+                 await  _context.Countries.BulkInsertAsync(newCountries);
+            }
+
             return newCountries;
         }
 
@@ -244,7 +253,7 @@ namespace IPInfoApp.Business.Services
         /// <param name="ipAddresses">The db ip addresses</param>
         /// <returns></returns>
         private async Task UpdateIpAddresses(Dictionary<int, string> twoLetterCodeLookup,
-                                              Dictionary<string, int> idLookup,
+                                               Dictionary<string, Data.Models.Country> idLookup,
                                                  Dictionary<string, Models.Country> ipCountryWebDictionary,
                                                  List<Data.Models.IpAddress> ipAddresses)
             {
@@ -260,7 +269,7 @@ namespace IPInfoApp.Business.Services
                         if (twoLetterCodeLookup[countryId] != countryFromWebService.TwoLetterCode)
                         {
                             
-                           ipAddress.CountryId = idLookup[countryFromWebService.TwoLetterCode];
+                           ipAddress.CountryId = idLookup[countryFromWebService.TwoLetterCode].Id;
 
                         updatedCountriesDictionary[ipAddress.Ip] = countryFromWebService;
                         }
