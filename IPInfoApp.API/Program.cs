@@ -1,6 +1,7 @@
 using Hangfire;
 using IPInfoApp.API.Extentions;
 using IPInfoApp.API.Middlewares;
+using IPInfoApp.Business.Contracts;
 using IPInfoApp.Business.Options;
 using IPInfoApp.Business.Services;
 using IPInfoApp.Data.Models;
@@ -38,8 +39,9 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(c =>
 var ip2cOptions = new HttpIP2COptions();
 builder.Services.Configure<HttpIP2COptions>(builder.Configuration.GetSection(HttpIP2COptions.Key));
 builder.Configuration.GetSection(HttpIP2COptions.Key).Bind(ip2cOptions);
-builder.Services.AddHttpClient<Ip2cService>(client =>
+builder.Services.AddHttpClient<IIp2cService, Ip2cService>(client =>
 {
+
     client.BaseAddress = new Uri(ip2cOptions.Uri);
 });
 

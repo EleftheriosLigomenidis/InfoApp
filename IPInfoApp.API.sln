@@ -12,6 +12,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "IPInfoApp.Business", "IPInf
 		{DEA65DBA-D5B7-4014-A188-77746B6564B2} = {DEA65DBA-D5B7-4014-A188-77746B6564B2}
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{3B137385-26EC-4737-BCBC-7DE17775C276}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IPInfoApp.Business.Tests", "IPInfoApp.Business.Tests\IPInfoApp.Business.Tests.csproj", "{BB5F9354-3F98-465F-9726-7C96749CD816}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,9 +34,16 @@ Global
 		{9FA93E60-B6BF-46F8-BE3C-E47933952A7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9FA93E60-B6BF-46F8-BE3C-E47933952A7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9FA93E60-B6BF-46F8-BE3C-E47933952A7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB5F9354-3F98-465F-9726-7C96749CD816}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB5F9354-3F98-465F-9726-7C96749CD816}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB5F9354-3F98-465F-9726-7C96749CD816}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB5F9354-3F98-465F-9726-7C96749CD816}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{BB5F9354-3F98-465F-9726-7C96749CD816} = {3B137385-26EC-4737-BCBC-7DE17775C276}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {F979BDCA-AB44-45AC-ADAD-7363C1DEFE46}

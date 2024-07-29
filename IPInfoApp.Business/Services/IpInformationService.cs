@@ -10,6 +10,7 @@ using IPInfoApp.Data.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Query.Internal;
+using Microsoft.EntityFrameworkCore.SqlServer.Query.Internal;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using System;
@@ -30,7 +31,6 @@ namespace IPInfoApp.Business.Services
         private readonly ILogger<IpInformationService> _logger;
         private readonly ICacheService _redis;
         private readonly IIp2cService _ip2c;
-        internal const string cacheKey = "ipAddress";
         private readonly IReportRepository _reportRepository;
 
         public IpInformationService(ApplicationDbContext context,
@@ -53,8 +53,8 @@ namespace IPInfoApp.Business.Services
         /// <returns></returns>
         public async Task<Models.Country> GetIpInformationAsync(string ipAddress)
         {
-            string key = $"{cacheKey}-{ipAddress}";
-            Models.Country? country; ;
+            string key = $"{ipAddress}";
+            Models.Country? country; 
             try
             {
                 
@@ -123,7 +123,7 @@ namespace IPInfoApp.Business.Services
         public async Task<List<Models.IpAddressPerCountry>> GetIpAddressReportAsync(List<string>? countryCodes)
         {
             string countryCodesString = countryCodes is not null &&  countryCodes.Count > 0 ? string.Join(",",countryCodes) : string.Empty;
-            string key = $"{cacheKey}-{countryCodesString}";
+            string key = $"{countryCodesString}";
 
              
             List<Models.IpAddressPerCountry>? reportItems;
@@ -150,26 +150,34 @@ namespace IPInfoApp.Business.Services
             return reportItems;
         }
 
+        /// <summary>
+        /// Fetches the ip information from the db and updates them in batches of 100
+        /// </summary>
+        /// <param name="cancellationToken">The cancellation token</param>
+        /// <returns></returns>
         [DisableConcurrentExecution(timeoutInSeconds: 60 * 5)] // Timeout after 5 minutes
         [AutomaticRetry(Attempts = 0, OnAttemptsExceeded = AttemptsExceededAction.Delete)]
         public async Task UpdateIpInformation(CancellationToken cancellationToken)
         {
-            _logger.LogInformation(Messages.UpdateIpInformationStarted());
+             _logger.LogInformation(Messages.UpdateIpInformationStarted());
             const int batchSize = 100;
             var totalCount = await _context.IpAddresses.CountAsync(cancellationToken: cancellationToken);
             var totalBatches = (int)Math.Ceiling((double)totalCount / batchSize);
-            //Fetch all the countries before   solves the N + 1 problem
+
+            //Fetch all the countries from start   solves the N + 1 problem
             // Downside is if dataset is large
             var countries = await _context.Countries.ToListAsync(cancellationToken);
-          
+            Dictionary<string,Data.Models.Country> countryLookup =  countries.ToDictionary(x => x.TwoLetterCode,x => x);
+            Dictionary<int, string> twoLetterCodeLookup = countries.ToDictionary(x => x.Id, x => x.TwoLetterCode);
+            Dictionary<string, int> idLookup = countries.ToDictionary(x => x.TwoLetterCode, x => x.Id);
             using (var transaction = await _context.Database.BeginTransactionAsync(cancellationToken))
             {
                 try
                 {
                     for (int batchNumber = 0; batchNumber < totalBatches; batchNumber++)
                     {
-                        //similar to pagination
-                        // take 100 entities
+                        
+
                         var ipAddresses = await _context.IpAddresses
                                             .Skip(batchNumber * batchSize)
                                             .Take(batchSize)
@@ -177,14 +185,22 @@ namespace IPInfoApp.Business.Services
 
                         //get updated information for ipAddress form webservice ip2c
                         List<string> ips = ipAddresses.Select(x => x.Ip).ToList();
-                        Dictionary<string,Data.Models.Country> dbDictionary =  ipAddresses.ToDictionary(i => i.Ip, i => i.Country);
+                        
                         Dictionary<string, Models.Country> ipCountryWebDictionary = await _ip2c.GetCountryDetailsByIpsAsync(ips);
 
-                      await  UpdateIpAddresses(countries, ipCountryWebDictionary, ipAddresses);
+                        List<Data.Models.Country> newCountries = await SaveNewCountries(ipCountryWebDictionary, countryLookup);
+
+                        if (newCountries.Count != 0)
+                        {
+                            foreach (var country in newCountries)
+                            {
+                                idLookup[country.TwoLetterCode] = country.Id;
+                                twoLetterCodeLookup[country.Id] = country.TwoLetterCode;
+                            }
+                        }
                       
 
-                        ////Save changes is put inisde the loop to prevent high memory usage  
-                        //await _context.SaveChangesAsync(cancellationToken);
+                        await  UpdateIpAddresses(twoLetterCodeLookup, idLookup, ipCountryWebDictionary, ipAddresses);
                     }
           
                     await transaction.CommitAsync(cancellationToken);
@@ -200,46 +216,69 @@ namespace IPInfoApp.Business.Services
                 
         }
 
-        /// <summary>
-        /// Updates the ips with new information
-        /// </summary>
-        /// <param name="countries">The db countries</param>
-        /// <param name="ipCountryWebDictionary">The new ip to countries dictionary</param>
-        /// <param name="ipAddresses">The ip addresses from db</param>
-        /// <returns></returns>
-        private async Task UpdateIpAddresses(List<Data.Models.Country> countries,
-                                             Dictionary<string, Models.Country> ipCountryWebDictionary,
-                                             List<Data.Models.IpAddress> ipAddresses)
+        private async Task<List<Data.Models.Country>> SaveNewCountries(Dictionary<string, Models.Country> ipCountryWebDictionary, 
+                                                                       Dictionary<string,Data.Models.Country> dbCountryLookup)
         {
-            Dictionary<int, string> TwoLetterCodeLookup = countries.ToDictionary(x => x.Id, x => x.TwoLetterCode);
-            Dictionary<string, int> idLookup = countries.ToDictionary(x => x.TwoLetterCode, x => x.Id);
-            foreach (var ipAddress in ipAddresses) 
+            var countryCodeList = ipCountryWebDictionary.Values.DistinctBy(x => x.TwoLetterCode).ToList();
+            List<Data.Models.Country> newCountries = new();
+            foreach (var country in countryCodeList) 
             {
-                // for the specific ip search if there is information
-                if (ipCountryWebDictionary.TryGetValue(ipAddress.Ip, out Models.Country? countryToUpdate))
-                {
-                    var countryId = ipAddress.CountryId;
-                    //check if the information is consistent
-                    if (TwoLetterCodeLookup[countryId] != countryToUpdate.TwoLetterCode)
-                    {
-                        //if not search if the ip has information about an existing country and if yes add the id to the ip address
-                        if(idLookup.TryGetValue(countryToUpdate.TwoLetterCode,out int id))
-                        {
-                             ipAddress.CountryId= id; 
-                        }
-                        else
-                        {
-                            ipAddress.Country = CountryMapper.ToDbObject(countryToUpdate);
-                        }
-                        string key = $"{cacheKey}-{ipAddress}";
-                       await _redis.ClearCacheAsync(key);
-                       await _redis.SetCacheItemAsync(key, countryId);
-                    }
-                     
+                if(!dbCountryLookup.ContainsKey(country.TwoLetterCode))
+                { 
+                    var dbCountry = CountryMapper.ToDbObject(country);
+                    newCountries.Add(dbCountry);
+                    
                 }
             }
-            await _context.IpAddresses.BulkUpdateAsync(ipAddresses);
+
+             await  _context.Countries.BulkInsertAsync(newCountries);
+            return newCountries;
         }
+
+        /// <summary>
+        /// Updates the ip addresses
+        /// </summary>
+        /// <param name="twoLetterCodeLookup">A dictionary that contains  id/two letter code lookup</param>
+        /// <param name="idLookup">A dicitonary that contains  country code / id  lookup</param>
+        /// <param name="ipCountryWebDictionary">Dictionary that contains  ip key / country lookup</param>
+        /// <param name="ipAddresses">The db ip addresses</param>
+        /// <returns></returns>
+        private async Task UpdateIpAddresses(Dictionary<int, string> twoLetterCodeLookup,
+                                              Dictionary<string, int> idLookup,
+                                                 Dictionary<string, Models.Country> ipCountryWebDictionary,
+                                                 List<Data.Models.IpAddress> ipAddresses)
+            {
+            var cacheKeysToUpdate = new List<string>();
+            var updatedCountriesDictionary = new Dictionary<string, Models.Country>(); 
+            foreach (var ipAddress in ipAddresses) 
+                {
+                    // for the specific ip search if there is country information
+                    if (ipCountryWebDictionary.TryGetValue(ipAddress.Ip, out Models.Country? countryFromWebService))
+                    {
+                        var countryId = ipAddress.CountryId;
+                        //check if the ip information matches the country in the dp
+                        if (twoLetterCodeLookup[countryId] != countryFromWebService.TwoLetterCode)
+                        {
+                            
+                           ipAddress.CountryId = idLookup[countryFromWebService.TwoLetterCode];
+
+                        updatedCountriesDictionary[ipAddress.Ip] = countryFromWebService;
+                        }
+                     
+                    }
+                }
+
+               await _context.IpAddresses.BulkUpdateAsync(ipAddresses);
+               var cacheTasks = cacheKeysToUpdate.Select(async key =>
+            {
+                await _redis.ClearCacheAsync(key);
+                await _redis.SetCacheItemAsync(key, updatedCountriesDictionary[key]);
+            });
+        }
+
+
+
+
 
         /// <summary>
         /// Persists the country details in the db
@@ -250,8 +289,14 @@ namespace IPInfoApp.Business.Services
         private async Task SaveCountryInformationInDb(Models.Country country,string ipAddress)
         {
             _logger.LogInformation(Messages.CreatingEntity(nameof(Models.Country)));
-            Models.IpAddress  model = new(ipAddress, country);
-            var dbObject = IpAddressMapper.ToDbObject(model);
+            var dbCountry =  await _context.Countries.FirstOrDefaultAsync(x => x.TwoLetterCode == country.TwoLetterCode);
+            Models.IpAddress model = new(ipAddress);
+
+            //case country already  exists just add the id to the new ipAddress otherwise create a new coutry 
+            Data.Models.IpAddress dbObject = dbCountry  == null ? 
+                                             dbObject = model.ToDbObject(country) :
+                                             dbObject = model.ToDbObject(dbCountry.Id);
+
             _context.IpAddresses.Add(dbObject);
 
             try

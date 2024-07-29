@@ -21,6 +21,7 @@ namespace IPInfoApp.Business.Mapper
             CreatedAt = ipAddress.CreatedAt,
             UpdatedAt = ipAddress.UpdatedAt,
             CountryId = ipAddress.CountryId,
+            Country  =  CountryMapper.ToBusinessObject(ipAddress.Country),
             Ip = ipAddress.Ip,
         };
 
@@ -28,16 +29,33 @@ namespace IPInfoApp.Business.Mapper
         /// maps a service obj to db obj
         /// </summary>
         /// <param name="srvObject">The service object</param>
+        /// <param name="srvCountry">The service country object</param>
         /// <returns></returns>
-        public static Data.Models.IpAddress ToDbObject(this Models.IpAddress srvObject)
+        public static Data.Models.IpAddress ToDbObject(this Models.IpAddress srvObject,Models.Country srvCountry)
         {
             return new Data.Models.IpAddress
             {
                 CreatedAt = srvObject.CreatedAt,
                 UpdatedAt = srvObject.UpdatedAt,
-                Country = CountryMapper.ToDbObject(srvObject.Country),
+                Country = CountryMapper.ToDbObject(srvCountry),
                 Ip = srvObject.Ip,
+            };
+        }
 
+        /// <summary>
+        /// maps a service obj to db obj
+        /// </summary>
+        /// <param name="srvObject">The service object</param>
+        /// <param name="countryId">The  country id</param>
+        /// <returns></returns>
+        public static Data.Models.IpAddress ToDbObject(this Models.IpAddress srvObject, int countryId)
+        {
+            return new Data.Models.IpAddress
+            {
+                CreatedAt = srvObject.CreatedAt,
+                UpdatedAt = srvObject.UpdatedAt,
+                CountryId = countryId,
+                Ip = srvObject.Ip,
             };
         }
 

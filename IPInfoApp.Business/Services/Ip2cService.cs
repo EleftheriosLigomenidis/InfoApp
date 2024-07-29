@@ -41,12 +41,30 @@ namespace IPInfoApp.Business.Services
             string responseBody = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
-                return JsonConvert.DeserializeObject<Country>(responseBody);
+                return ProcessSuccessIp2cResponce(responseBody);
 
             else
                 throw new IP2CException(statusCode: response.StatusCode, reasonPhrase: response.ReasonPhrase ?? "", responseBody: responseBody);
         }
 
+        /// <summary>
+        /// Processes the response of the ip2c service  and converts it into  a Business object
+        /// </summary>
+        /// <param name="responseBody">The responce body of the ip2c</param>
+        /// <returns></returns>
+        private static Country? ProcessSuccessIp2cResponce(string responseBody) 
+        {
+            Country? country = null;
+            if (!string.IsNullOrEmpty(responseBody))
+            {
+                var data = responseBody.Split(';');
+                country = new();
+                country.TwoLetterCode = data[1];
+                country.ThreeLetterCode = data[2];
+                country.Name = data[3];
+            }
+                return country;
+        }
 
         /// <summary>
         /// Gets all the country details for a list of ipAddreses

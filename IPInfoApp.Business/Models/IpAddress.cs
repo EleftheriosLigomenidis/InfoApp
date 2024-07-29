@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Diagnostics;
+﻿using IPInfoApp.Data.Models;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -23,12 +24,12 @@ namespace IPInfoApp.Business.Models
         public IpAddress()
         {}
 
-        public IpAddress(string ipAddress,Country country)
+        public IpAddress(string ipAddress)
         {
             CreatedAt = DateTime.Now;
-            Country = country;
             UpdatedAt = DateTime.Now;
             Ip = ipAddress;
         }
+
     }
 }

@@ -1,5 +1,5 @@
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Data Source=DESKTOP-M5RIODI\\SQLEXPRESS;Initial Catalog=IPInfoDB;Integrated Security=True;TrustServerCertificate=True"
+    "DefaultConnection": "Data Source=DESKTOP-M5RIODI\\SQLEXPRESS;Initial Catalog=IPInfo;Integrated Security=True;TrustServerCertificate=True"
   }
 }

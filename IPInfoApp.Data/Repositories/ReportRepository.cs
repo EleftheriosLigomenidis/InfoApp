@@ -48,6 +48,6 @@ namespace IPInfoApp.Data.Repositories
             }
 
             return results;
-        }
+           }
     }
 }

@@ -11,7 +11,6 @@ namespace IPInfoApp.API.Extentions
         public static void AddServiceCollections(this IServiceCollection services)
         {
             services.AddSingleton<ICacheService,CacheService>();
-            services.AddScoped<IIp2cService, Ip2cService>();
             services.AddScoped<IIpInformationService, IpInformationService>();
             services.AddScoped<IReportRepository, ReportRepository>();
 
