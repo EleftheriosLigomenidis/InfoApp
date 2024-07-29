@@ -53,13 +53,12 @@ namespace IPInfoApp.Business.Services
         /// <returns></returns>
         public async Task<Models.Country> GetIpInformationAsync(string ipAddress)
         {
-            string key = $"{ipAddress}";
             Models.Country? country; 
 
             try
             {
                 
-                 country = await _redis.TryGetValueFromCacheAsync<Models.Country>(key);
+                 country = await _redis.TryGetValueFromCacheAsync<Models.Country>(ipAddress);
 
                 if (country == null)
                 {
@@ -76,7 +75,7 @@ namespace IPInfoApp.Business.Services
                         await SaveCountryInformationInDb(country, ipAddress);
                     }
 
-                    await _redis.SetCacheItemAsync(key, country);
+                    await _redis.SetCacheItemAsync(ipAddress, country);
                 }
                 return country;
             }
@@ -105,12 +104,6 @@ namespace IPInfoApp.Business.Services
                                  .Include(x => x.Country)
                                  .FirstOrDefaultAsync(x => x.Ip == ipAddress);
 
-            //if (dbObject is null)
-            //{
-            //    var errorMessage = Messages.FetchEntity(nameof(Data.Models.IpAddress), nameof(ipAddress), ipAddress);
-            //    _logger.LogError(errorMessage);
-            //     throw new KeyNotFoundException(errorMessage);
-            //}
             if(dbObject != null)
             {
 
@@ -128,12 +121,9 @@ namespace IPInfoApp.Business.Services
         public async Task<List<Models.IpAddressPerCountry>> GetIpAddressReportAsync(List<string>? countryCodes)
         {
             string countryCodesString = countryCodes is not null &&  countryCodes.Count > 0 ? string.Join(",",countryCodes) : string.Empty;
-            string key = $"{countryCodesString}";
-
-             
             List<Models.IpAddressPerCountry>? reportItems;
 
-            reportItems = await _redis.TryGetValueFromCacheAsync<List<Models.IpAddressPerCountry>>(key);
+            reportItems = await _redis.TryGetValueFromCacheAsync<List<Models.IpAddressPerCountry>>(countryCodesString);
             if (reportItems == null) 
             {
                 reportItems = [];
@@ -141,7 +131,7 @@ namespace IPInfoApp.Business.Services
                 {
                     var dbItems = await _reportRepository.GetIpAddressesPerCountryAsync(countryCodesString);
                     reportItems = dbItems.Select(ReportMapper.ToBusinessObject).ToList();
-                    await _redis.SetCacheItemAsync(key, reportItems);
+                    await _redis.SetCacheItemAsync(countryCodesString, reportItems);
                 }
                 catch (Exception ex)
                 {
@@ -265,22 +255,22 @@ namespace IPInfoApp.Business.Services
             var cacheKeysToUpdate = new List<string>();
             var updatedCountriesDictionary = new Dictionary<string, Models.Country>(); 
             foreach (var ipAddress in ipAddresses) 
+            {
+                // for the specific ip search if there is country information
+                if (ipCountryWebDictionary.TryGetValue(ipAddress.Ip, out Models.Country? countryFromWebService))
                 {
-                    // for the specific ip search if there is country information
-                    if (ipCountryWebDictionary.TryGetValue(ipAddress.Ip, out Models.Country? countryFromWebService))
+                    var countryId = ipAddress.CountryId;
+                    //check if the ip information matches the country in the dp
+                    if (twoLetterCodeLookup[countryId] != countryFromWebService.TwoLetterCode)
                     {
-                        var countryId = ipAddress.CountryId;
-                        //check if the ip information matches the country in the dp
-                        if (twoLetterCodeLookup[countryId] != countryFromWebService.TwoLetterCode)
-                        {
                             
-                           ipAddress.CountryId = idLookup[countryFromWebService.TwoLetterCode].Id;
-
+                        ipAddress.CountryId = idLookup[countryFromWebService.TwoLetterCode].Id;
+                        ipAddress.UpdatedAt = DateTime.Now;
                         updatedCountriesDictionary[ipAddress.Ip] = countryFromWebService;
-                        }
-                     
                     }
+                     
                 }
+            }
 
                await _context.IpAddresses.BulkUpdateAsync(ipAddresses);
                var cacheTasks = cacheKeysToUpdate.Select(async key =>
