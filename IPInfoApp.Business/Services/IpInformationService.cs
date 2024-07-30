@@ -192,6 +192,8 @@ namespace IPInfoApp.Business.Services
                       
 
                         await  UpdateIpAddresses(twoLetterCodeLookup, countryLookup, ipCountryWebDictionary, ipAddresses);
+                        string batchNo = (batchNumber + 1).ToString();
+                        _logger.LogInformation(Messages.BatchProcessed(batchNo));
                     }
           
                     await transaction.CommitAsync(cancellationToken);

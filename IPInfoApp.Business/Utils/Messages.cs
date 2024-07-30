@@ -9,6 +9,7 @@ namespace IPInfoApp.Business.Utils
     public  class Messages
     {
         public static string CacheKeyNull() => "Cache key cannot be null or empty.";
+        public static string BatchProcessed(string batchNumber) => $"Batch {batchNumber} processed successfully.";
         public static string UpdateIpInformationStarted() => "UpdateIpInformation has started mass updating ip addresses.";
         public static string UpdateIpInformationFailed() => "UpdateIpInformation has encountered an error.";
         public static string WebServiceBulkOperation() => "Performing bulk call to ip2c WebSerice";
