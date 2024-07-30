@@ -87,7 +87,7 @@ namespace IPInfoApp.Business.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, Messages.FetchEntityFailed(nameof(Models.Country),Datasource.WebService.GetEnumDescription(),ip));
+                    _logger.LogWarning(ex, Messages.FetchEntityFailed(nameof(Models.Country),Datasource.WebService.GetEnumDescription(),ip));
                     return (ip, null);
                     //Alternate implementation if one task fails the whole operation fails...
                     //Stricter error handling

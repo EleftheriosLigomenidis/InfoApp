@@ -140,8 +140,6 @@ namespace IPInfoApp.Business.Services
                     throw;
                 }
             }
-         
-
             return reportItems;
         }
 
@@ -171,7 +169,6 @@ namespace IPInfoApp.Business.Services
                     for (int batchNumber = 0; batchNumber < totalBatches; batchNumber++)
                     {
                         
-
                         var ipAddresses = await _context.IpAddresses
                                             .Skip(batchNumber * batchSize)
                                             .Take(batchSize)
@@ -181,7 +178,7 @@ namespace IPInfoApp.Business.Services
                         List<string> ips = ipAddresses.Select(x => x.Ip).ToList();
                         
                         Dictionary<string, Models.Country> ipCountryWebDictionary = await _ip2c.GetCountryDetailsByIpsAsync(ips);
-
+                        //save any new countries that are not in the db that may be used later in the ip address info update
                         List<Data.Models.Country> newCountries = await SaveNewCountries(ipCountryWebDictionary, countryLookup);
 
                         if (newCountries.Count != 0)
