@@ -155,7 +155,7 @@ namespace IPInfoApp.Business.Services
         public async Task UpdateIpInformation(CancellationToken cancellationToken)
         {
              _logger.LogInformation(Messages.UpdateIpInformationStarted());
-            const int batchSize = 10;
+            const int batchSize = 100;
             var totalCount = await _context.IpAddresses.CountAsync(cancellationToken: cancellationToken);
             var totalBatches = (int)Math.Ceiling((double)totalCount / batchSize);
 
