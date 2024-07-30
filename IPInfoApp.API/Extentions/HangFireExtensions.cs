@@ -30,12 +30,12 @@ namespace IPInfoApp.API.Extentions
             using var scope = serviceProvider.CreateScope();
 
             var reccuringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
-            var tenderStatusUpdatorIntervalCron = configuration.GetValue<string>("IpInformationUpdatorIntervalCron");
+            var ipInformationCron = configuration.GetValue<string>("IpInformationUpdatorIntervalCron");
 
             reccuringJobManager.AddOrUpdate(
                 "IpInformationUpdator",
                 (IIpInformationService iinformationService) => iinformationService.UpdateIpInformation(default),
-                tenderStatusUpdatorIntervalCron,
+                ipInformationCron,
                 new RecurringJobOptions() { MisfireHandling = MisfireHandlingMode.Ignorable }
             );
 

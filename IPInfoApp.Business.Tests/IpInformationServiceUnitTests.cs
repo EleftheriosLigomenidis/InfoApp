@@ -166,6 +166,45 @@ namespace IPInfoApp.Business.Tests
             result.Should().BeEquivalentTo(srvCountry);
         }
 
+
+        [Fact]
+        public async Task UpdateIpInformation_ShouldUpdateIpInformationSuccessfully()
+        {
+            // Arrange
+            var cancellationToken = CancellationToken.None;
+            var ipAddresses = new List<IpAddress>
+        {
+            new IpAddress { Id = 1, CountryId=1, Ip = "47.255.255.254",CreatedAt = new DateTime(2024,1,1), UpdatedAt = new DateTime(2024,1,1) },
+            new IpAddress { Id = 2, CountryId = 2,Ip = "102.128.76.0" ,CreatedAt = new DateTime(2024,1,1), UpdatedAt = new DateTime(2024,1,1)}
+        };
+            var countries = new List<Country>
+        {
+            new Country { Id = 1, TwoLetterCode = "US",ThreeLetterCode ="USA",  Name = "United States",CreatedAt = new DateTime(2024,1,1) },
+            new Country { Id = 2, TwoLetterCode = "ZW",ThreeLetterCode="ZWE" ,Name = "Zimbabwe",CreatedAt = new DateTime(2024,1,1) }
+        };
+            await _context.IpAddresses.AddRangeAsync(ipAddresses);
+            await _context.Countries.AddRangeAsync(countries);
+            await _context.SaveChangesAsync();
+
+            var ipCountryWebDictionary = new Dictionary<string, Models.Country>
+        {
+            { "47.255.255.254", new Models.Country { Id = 1, TwoLetterCode = "US" } },
+            { "102.128.76.0", new Models.Country { Id = 2, TwoLetterCode = "ZW" } }
+        };
+            A.CallTo(() => _ip2c.GetCountryDetailsByIpsAsync(A<List<string>>._))
+                .Returns(ipCountryWebDictionary);
+
+            // Act
+            Func<Task> act = async () => await _sut.UpdateIpInformation(cancellationToken);
+
+            // Assert
+            await act.Should().NotThrowAsync();
+            var updatedIpAddresses = await _context.IpAddresses.ToListAsync();
+            updatedIpAddresses.Should().ContainSingle(ip => ip.Ip == "47.255.255.254" && ip.CountryId == 1);
+            updatedIpAddresses.Should().ContainSingle(ip => ip.Ip == "102.128.76.0" && ip.CountryId == 2);
+         
+        }
+
         public void Dispose()
         {
             _context.Dispose();

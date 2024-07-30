@@ -15,14 +15,14 @@ using System.Threading.Tasks;
 
 namespace IPInfoApp.Business.Tests
 {
-    public class Ip2cServiceTests
+    public class Ip2cServiceUnitTests
     {
         private readonly Ip2cService _ip2cService;
         private readonly HttpClient _httpClient;
         private readonly FakeableHttpMessageHandler _httpMessageHandler;
         private readonly ILogger<Ip2cService> _logger;
 
-        public Ip2cServiceTests()
+        public Ip2cServiceUnitTests()
         {
             _httpMessageHandler = A.Fake<FakeableHttpMessageHandler>();
             _httpClient = new HttpClient(_httpMessageHandler)

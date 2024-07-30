@@ -16,6 +16,7 @@ namespace IPInfoApp.Data.Repositories
     {
         private readonly SqlConnection _connection = new(configuration.GetConnectionString("DefaultConnection"));
 
+        
 
         /// <summary>
         /// Executed a command to call stored procedure  RPT_CalculateIpAddressesPerCountry to fetch data for reporting according to the given country codes
