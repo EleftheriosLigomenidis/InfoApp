@@ -278,6 +278,7 @@ namespace IPInfoApp.Business.Services
                 await _redis.ClearCacheAsync(key);
                 await _redis.SetCacheItemAsync(key, updatedCountriesDictionary[key]);
             });
+            await Task.WhenAll(cacheTasks);
         }
 
 
