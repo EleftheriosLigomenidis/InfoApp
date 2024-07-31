@@ -31,10 +31,11 @@ namespace IPInfoApp.API.Tests
             string ipAddress = null;
 
             // Act
-            Func<Task> act = async () => await _sut.GetIpInformationAsync(ipAddress);
+            var result = await _sut.GetIpInformationAsync(ipAddress);
 
             // Assert
-            await act.Should().ThrowAsync<ArgumentNullException>().WithMessage("*ipAddress*");
+            result.Should().BeOfType<BadRequestObjectResult>()
+                  .Which.Value.Should().Be("The IP address parameter cannot be null or empty.");
         }
 
 

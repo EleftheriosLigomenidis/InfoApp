@@ -18,7 +18,7 @@ namespace IPInfoApp.API.Controllers
             if (string.IsNullOrEmpty(ipAddress))
 
             {
-                throw new ArgumentNullException(nameof(ipAddress));
+                  return BadRequest("The IP address parameter cannot be null or empty.");
             }
             else 
             {

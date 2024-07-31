@@ -82,7 +82,7 @@ namespace IPInfoApp.Business.Services
             catch (Exception ex)
             {
 
-                _logger.LogWarning(ex,Messages.FetchInformation(ipAddress));
+                _logger.LogError(ex,Messages.FetchInformation(ipAddress));
                 throw;
             }
        
@@ -136,12 +136,17 @@ namespace IPInfoApp.Business.Services
                 catch (Exception ex)
                 {
                     var message = Messages.FetchCollectionFailed(nameof(Data.Models.IpAddressPerCountry));
-                    _logger.LogWarning(ex, message);
+                    _logger.LogError(ex, message);
                     throw;
                 }
             }
             return reportItems;
         }
+
+        //async programming
+        //scalability perfornabce
+        //responsivnes
+        //
 
         /// <summary>
         /// Fetches the ip information from the db and updates them in batches of 100
